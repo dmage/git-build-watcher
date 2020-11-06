@@ -1,0 +1,79 @@
+# NOTE: Don't forget to change ServiceAccount namespace in RoleBinding
+# NOTE: Don't forget to change git-build-watcher arguments in CronJob
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: git-build-watcher
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: git-build-watcher
+rules:
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - buildconfigs
+  verbs:
+  - get
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - buildconfigs/instantiate
+  verbs:
+  - create
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - builds
+  verbs:
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: git-build-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: git-build-watcher
+subjects:
+- kind: ServiceAccount
+  name: git-build-watcher
+  namespace: YOUR-NAMESPACE
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: git-build-watcher
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      name: git-build-watcher
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: git-build-watcher
+            image: docker.io/dmage/git-build-watcher
+            command:
+            - /usr/bin/git-build-watcher
+            - -v=2
+            - YOUR-BUILD-CONFIG
+            resources:
+              requests:
+                memory: "50Mi"
+                cpu: "10m"
+              limits:
+                memory: "50Mi"
+                cpu: "10m"
+            terminationMessagePolicy: FallbackToLogsOnError
+          restartPolicy: Never
+          serviceAccountName: git-build-watcher
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 600

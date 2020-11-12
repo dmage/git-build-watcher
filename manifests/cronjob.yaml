@@ -1,0 +1,42 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: git-build-watcher
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      name: git-build-watcher
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: git-build-watcher
+            image: quay.io/dmage/git-build-watcher:latest
+            command:
+            - /bin/sh
+            - -c
+            - '/usr/bin/git-build-watcher -v=2 "$(cat /etc/git-build-watcher/buildconfig)"'
+            resources:
+              requests:
+                memory: "50Mi"
+                cpu: "10m"
+              limits:
+                memory: "50Mi"
+                cpu: "10m"
+            terminationMessagePolicy: FallbackToLogsOnError
+            volumeMounts:
+            - name: config
+              mountPath: /etc/git-build-watcher
+              readOnly: true
+          restartPolicy: Never
+          serviceAccountName: git-build-watcher
+          volumes:
+          - name: config
+            configMap:
+              name: git-build-watcher
+  schedule: '*/5 * * * *'
+  startingDeadlineSeconds: 600

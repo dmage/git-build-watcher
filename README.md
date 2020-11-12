@@ -28,6 +28,8 @@ every 5 minutes. You can create it for the BuildConfig `MY-BUILDCONFIG` in the
 namespace `MY-NAMESPACE` using these commands:
 
 ```console
+$ git clone https://github.com/dmage/git-build-watcher.git
+$ cd ./git-build-watcher
 $ mkdir ./my-deployment && cat >./my-deployment/kustomization.yaml <<END
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
